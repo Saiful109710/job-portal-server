@@ -85,6 +85,13 @@ async function run() {
               res.send(result)
         })
 
+        app.get('/job-applications/jobs/:id',async(req,res)=>{
+              const id = req.params.id;
+              const query = {job_id:id}
+              const result = await jobApplicationCollection.find(query).toArray();
+              res.send(result)
+        })
+
         app.post('/job-applications',async(req,res)=>{
           const application = req.body;
           const result = await jobApplicationCollection.insertOne(application);
