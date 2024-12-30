@@ -122,6 +122,20 @@ async function run() {
 
         })
 
+        app.patch('/job-applications/:id',async(req,res)=>{
+            const id = req.params.id;
+            const data = req.body
+            const query = {_id:new ObjectId(id)}
+            const updatedDoc = {
+              $set:{
+                  status:data.status
+              }
+            }
+
+            const result = await jobApplicationCollection.updateOne(query,updatedDoc);
+            res.send(result)
+        })
+
         app.delete('/job-applications/:id',async(req,res)=>{
           const  id = req.params.id;
           const query = {_id:new ObjectId(id)}
