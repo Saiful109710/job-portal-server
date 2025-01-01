@@ -1,12 +1,36 @@
 const express = require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken')
+const cookieParser = require('cookie-parser')
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 7000
 
 // middleware
-app.use(cors());
+app.use(cors(
+  {
+    origin:['http://localhost:5173'],
+    credentials:true
+  }
+));
 app.use(express.json())
+app.use(cookieParser())
+
+const verifyToken = (req,res,next)=>{
+    const token = req.cookies?.token;
+    // console.log('token inside verifyLogger',token)
+    if(!token){
+      return res.status(401).send({message:'unauthorized access'});
+    }
+    jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decode)=>{
+      if(err){
+        return res.status(401).send({message:'unauthorized access'})
+      }
+      next()
+    })
+   
+}
+
 
 // DB user = job_hunter
 // DB pass = tFa43jyjglBAcsA9
@@ -64,9 +88,10 @@ async function run() {
 
         // job-application api
 
-        app.get('/job-application',async(req,res)=>{
+        app.get('/job-application',verifyToken,async(req,res)=>{
               const email = req.query.email
               const query = {application_email:email}
+             
               const result = await jobApplicationCollection.find(query).toArray();
 
               // fokira way to aggregate data
@@ -142,6 +167,29 @@ async function run() {
           const result = await jobApplicationCollection.deleteOne(query);
           res.send(result)
         })
+
+        // auth related api
+        app.post('/jwt',(req,res)=>{
+          const user = req.body;
+          const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'5h'})
+          res.cookie('token',token,{
+            httpOnly:true,
+            secure:false
+          })
+          .send({success:true})
+        })
+
+        app.post('/logout',(req,res)=>{
+
+          res.clearCookie('token',{
+            httpOnly:true,
+            secure:false
+          })
+          .send({success:true})
+
+        })
+
+     
 
   } finally {
     // Ensures that the client will close when you finish/error
